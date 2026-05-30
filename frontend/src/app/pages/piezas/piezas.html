@@ -1,0 +1,80 @@
+﻿<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Piezas</h1>
+      <p>Catalogo utilizable en presupuestos y ordenes.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleForm()">{{ showForm ? 'Cancelar' : 'Nueva pieza' }}</button>
+  </header>
+
+  @if (success) {
+    <div class="alert alert-success">{{ success }}</div>
+  }
+  @if (error) {
+    <div class="alert alert-error">{{ error }}</div>
+  }
+
+  @if (showForm) {
+    <article class="panel panel-stack">
+      <h3>{{ editingId ? 'Modificar pieza' : 'Alta de pieza' }}</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre</label>
+          <input [(ngModel)]="form.nombre" />
+        </div>
+        <div class="field">
+          <label>Marca</label>
+          <input [(ngModel)]="form.marca" />
+        </div>
+        <div class="field">
+          <label>Medidas</label>
+          <input [(ngModel)]="form.medidas" />
+        </div>
+        <div class="field">
+          <label>Precio unitario</label>
+          <input type="number" step="0.01" [(ngModel)]="form.precioUnitario" />
+        </div>
+        <label class="field-check">
+          <input type="checkbox" [(ngModel)]="form.activo" />
+          <span>Activa</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">{{ editingId ? 'Guardar cambios' : 'Guardar pieza' }}</button>
+        <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Catalogo</h3>
+    <p class="hint">Podes modificar una pieza desde el boton de cada fila.</p>
+    <div class="actions">
+      <div class="field" style="min-width: 260px;">
+        <label>Buscar</label>
+        <input [(ngModel)]="filtros.texto" placeholder="Nombre, marca, medidas..." />
+      </div>
+    </div>
+    @if (loading) {
+      <p class="hint">Cargando piezas...</p>
+    }
+    <div class="list">
+      @if (!loading && rowsFiltradas().length === 0) {
+        <div class="list-item"><span>No hay piezas cargadas.</span></div>
+      }
+      @for (row of rowsFiltradas(); track row.idPieza) {
+        <div class="list-item list-item-clickable" (dblclick)="editar(row)">
+          <div class="list-item-main">
+            <span class="list-item-title">{{ row.nombre }} · {{ row.marca }}</span>
+            <span class="list-item-sub">ID {{ row.idPieza }} · {{ row.medidas }} · $ {{ row.precioUnitario }}</span>
+          </div>
+          <div class="actions">
+            <span class="badge">{{ row.activo ? 'ACTIVA' : 'INACTIVA' }}</span>
+            <button class="btn btn-soft btn-xs" (click)="editar(row)">Modificar</button>
+            <button class="btn btn-danger btn-xs" type="button" (click)="eliminar(row)">Borrar</button>
+          </div>
+        </div>
+      }
+    </div>
+  </article>
+</section>

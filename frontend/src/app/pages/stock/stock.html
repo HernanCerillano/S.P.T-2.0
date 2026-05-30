@@ -1,0 +1,114 @@
+﻿<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Stock</h1>
+      <p>Control de cantidades con trazabilidad de movimientos.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleForm()">{{ showForm ? 'Cancelar' : 'Registrar ingreso' }}</button>
+  </header>
+
+  @if (success) {
+    <div class="alert alert-success">{{ success }}</div>
+  }
+  @if (error) {
+    <div class="alert alert-error">{{ error }}</div>
+  }
+
+  @if (showForm) {
+    <article class="panel panel-stack">
+      <h3>Movimiento de stock</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Pieza</label>
+          <input [(ngModel)]="piezaBusqueda" placeholder="Buscar pieza por nombre, marca o ID" />
+          <select [(ngModel)]="form.idPieza">
+            <option [ngValue]="0">Seleccionar pieza</option>
+            @for (pieza of piezasFiltradas(); track pieza.idPieza) {
+              <option [ngValue]="pieza.idPieza">{{ piezaLabel(pieza.idPieza) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Tipo movimiento</label>
+          <select [(ngModel)]="form.tipoMovimiento">
+            @for (tipo of tiposMovimiento; track tipo) {
+              <option [value]="tipo">{{ tipoMovimientoLabel(tipo) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Cantidad</label>
+          <input type="number" [(ngModel)]="form.cantidad" />
+        </div>
+        <div class="field">
+          <label>Costo unitario</label>
+          <input type="number" step="0.01" [(ngModel)]="form.costoUnitario" />
+        </div>
+        <div class="field field-span-2">
+          <label>Proveedor / origen</label>
+          <input [(ngModel)]="form.proveedorOrigen" />
+        </div>
+        <div class="field field-span-2">
+          <label>Observaciones</label>
+          <textarea [(ngModel)]="form.observaciones"></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="registrar()">Guardar movimiento</button>
+        <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <div class="grid grid-3">
+    <article class="panel">
+      <h3>Stock actual</h3>
+      <div class="field">
+        <label>Filtrar stock</label>
+        <input [(ngModel)]="filtroStock" placeholder="Buscar por pieza, marca o ID" />
+      </div>
+      @if (loading) {
+        <p class="hint">Cargando stock...</p>
+      }
+      <div class="list">
+        @if (!loading && stockFiltrado().length === 0) {
+          <div class="list-item"><span>No hay stock cargado.</span></div>
+        }
+        @for (row of stockFiltrado(); track row.idStock) {
+          <div class="list-item">
+            <div class="list-item-main">
+              <span class="list-item-title">{{ piezaLabel(row.idPieza) }}</span>
+              <span class="list-item-sub">Stock #{{ row.idStock }} · {{ stockEstadoLabel(row.cantidadActual) }}</span>
+            </div>
+            <div class="actions">
+              <span class="badge">{{ row.cantidadActual }}</span>
+              <span [class]="stockEstadoClass(row.cantidadActual)">{{ stockEstadoLabel(row.cantidadActual) }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </article>
+
+    <article class="panel field-span-2">
+      <h3>Historial de movimientos</h3>
+      <div class="list">
+        @if (!loading && movimientosFiltrados().length === 0) {
+          <div class="list-item"><span>Sin movimientos registrados.</span></div>
+        }
+        @for (mov of movimientosFiltrados(); track mov.idMovimiento) {
+          <div class="list-item">
+            <div class="list-item-main">
+              <span class="list-item-title">Movimiento #{{ mov.idMovimiento }} · {{ piezaLabel(mov.idPieza) }}</span>
+              <span class="list-item-sub">{{ tipoMovimientoLabel(mov.tipoMovimiento) }} · Cantidad {{ mov.cantidad }} · {{ mov.proveedorOrigen || 'sin origen' }}</span>
+              <span class="list-item-sub">{{ mov.fechaMovimiento || 'sin fecha' }}</span>
+            </div>
+            <div class="actions">
+              <span class="badge">$ {{ mov.costoUnitario }}</span>
+              <button class="btn btn-danger btn-xs" type="button" (click)="eliminarMovimiento(mov)">Borrar</button>
+            </div>
+          </div>
+        }
+      </div>
+    </article>
+  </div>
+</section>

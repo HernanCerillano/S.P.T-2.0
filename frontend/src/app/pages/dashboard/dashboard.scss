@@ -1,0 +1,110 @@
+/* ── Calendario semanal ─────────────────────────────────────────────────── */
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+
+  .cal-title {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 1.35rem;
+    letter-spacing: 0.5px;
+    color: var(--color-text-primary);
+  }
+
+  .btn-xs {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.5rem 0.9rem;
+  }
+}
+
+.cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.cal-day {
+  min-width: 100px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  background: var(--color-bg-card);
+
+  &.cal-day-hoy {
+    border-color: var(--color-accent);
+    background: var(--color-accent-light);
+
+    .cal-day-label {
+      color: var(--color-accent);
+      font-weight: 700;
+    }
+  }
+}
+
+.cal-day-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+  color: var(--color-text-secondary);
+}
+
+.cal-day-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cal-item {
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.4rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+/* Cita — azul marino (armoniza con la paleta) */
+.cal-cita {
+  background: #DBEAFE;
+  color: #1E3A5F;
+  border-left: 3px solid var(--color-primary-light);
+}
+
+/* Evento — verde teal (color de éxito de la paleta) */
+.cal-evento {
+  background: #CCFBF1;
+  color: #065F46;
+  border-left: 3px solid var(--color-success);
+}
+
+.cal-item-time {
+  font-weight: 600;
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
+
+.cal-item-titulo {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-vacio {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}

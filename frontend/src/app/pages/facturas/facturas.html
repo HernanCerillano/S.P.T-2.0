@@ -1,0 +1,128 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Facturas</h1>
+      <p>Emision, anulacion y descarga de PDF de facturas.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleForm()">
+      {{ showForm ? 'Cancelar' : 'Nueva factura' }}
+    </button>
+  </header>
+
+  @if (success) { <div class="alert alert-success">{{ success }}</div> }
+  @if (error)   { <div class="alert alert-error">{{ error }}</div> }
+
+  @if (showForm) {
+    <article class="panel panel-stack">
+      <h3>Emitir comprobante</h3>
+      <div class="numero-asignado-display">
+        <span class="numero-label">Número de comprobante a asignar</span>
+        <span class="numero-valor">{{ proximoNumero || '…' }}</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Origen</label>
+          <select [(ngModel)]="origenSeleccionado" (ngModelChange)="idOrigenSeleccionado = 0">
+            <option value="OT">Orden de trabajo</option>
+            <option value="PRESUPUESTO">Presupuesto</option>
+          </select>
+        </div>
+
+        @if (origenSeleccionado === 'OT') {
+          <div class="field">
+            <label>OT</label>
+            <select [(ngModel)]="idOrigenSeleccionado">
+              <option [ngValue]="0">Seleccionar OT</option>
+              @for (ot of otsCatalogo; track ot.idOt) {
+                <option [ngValue]="ot.idOt">
+                  {{ ot.numeroOt || 'OT-' + ot.idOt }} · Total ${{ ot.total | number:'1.2-2' }}
+                </option>
+              }
+            </select>
+          </div>
+        }
+
+        @if (origenSeleccionado === 'PRESUPUESTO') {
+          <div class="field">
+            <label>Presupuesto</label>
+            <select [(ngModel)]="idOrigenSeleccionado">
+              <option [ngValue]="0">Seleccionar presupuesto</option>
+              @for (p of presupuestasCatalogo; track p.idPresupuesto) {
+                <option [ngValue]="p.idPresupuesto">
+                  {{ p.numeroPresupuesto || 'PRES-' + p.idPresupuesto }} · Total ${{ p.total | number:'1.2-2' }}
+                </option>
+              }
+            </select>
+          </div>
+        }
+
+        <div class="field">
+          <label>Tipo de factura</label>
+          <select [(ngModel)]="form.tipoFactura">
+            @for (tipo of tiposFactura; track tipo) {
+              <option [value]="tipo">Tipo {{ tipo }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Impuestos ($)</label>
+          <input type="number" [(ngModel)]="form.impuestos" placeholder="0" />
+        </div>
+        <div class="field field-span-2">
+          <label>Observaciones</label>
+          <input [(ngModel)]="form.observaciones" placeholder="Observaciones opcionales..." />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">Emitir factura</button>
+        <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Listado</h3>
+    <div class="actions">
+      <div class="field">
+        <label>Estado</label>
+        <select [(ngModel)]="filtroEstado">
+          <option value="">Todos</option>
+          <option value="EMITIDA">EMITIDA</option>
+          <option value="ANULADA">ANULADA</option>
+        </select>
+      </div>
+      <div class="field" style="min-width: 200px;">
+        <label>Buscar</label>
+        <input [(ngModel)]="filtroTexto" placeholder="Numero, tipo..." />
+      </div>
+    </div>
+    @if (loading) { <p class="hint">Cargando facturas...</p> }
+    <div class="list">
+      @if (!loading && rowsFiltradas().length === 0) {
+        <div class="list-item"><span>No hay facturas.</span></div>
+      }
+      @for (row of rowsFiltradas(); track row.idFactura) {
+        <div class="list-item">
+          <div class="list-item-main">
+            <span class="list-item-title">
+              Factura Tipo {{ row.tipoFactura }} · {{ row.numeroFactura }}
+            </span>
+            <span class="list-item-sub">
+              Total ${{ row.total | number:'1.2-2' }} · Subtotal ${{ row.subtotal | number:'1.2-2' }} · Impuestos ${{ row.impuestos | number:'1.2-2' }}
+              · Emitida {{ row.fechaEmision | date:'dd/MM/yyyy HH:mm' }}
+              @if (row.idOt) { · OT #{{ row.idOt }} }
+              @if (row.idPresupuesto) { · Pres. #{{ row.idPresupuesto }} }
+            </span>
+          </div>
+          <div class="actions">
+            <span [class]="estadoBadgeClass(row.estado)">{{ row.estado }}</span>
+            <button class="btn btn-soft btn-xs" type="button" [disabled]="downloadingPdf" (click)="descargarPdf(row)">PDF</button>
+            @if (row.estado === 'EMITIDA') {
+              <button class="btn btn-danger btn-xs" type="button" (click)="anular(row)">Anular</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </article>
+</section>

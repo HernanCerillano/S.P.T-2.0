@@ -1,0 +1,26 @@
+/* Bloque destacado para "Número a asignar" en formularios de alta (OT, Comprobante).
+   Aparece arriba del form, lo más visible para que el operador no pueda ignorarlo. */
+
+.numero-asignado-display {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #F4F4F4;
+  border-left: 4px solid #A4161A;   /* rojo accent — paleta Suspensión Tito */
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+
+  .numero-label {
+    font-size: 15px;
+    color: #2A2A2A;
+    font-weight: 500;
+  }
+
+  .numero-valor {
+    font-size: 22px;
+    color: #0D1B2A;                  /* azul oscuro — paleta */
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+}

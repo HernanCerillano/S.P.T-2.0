@@ -1,0 +1,47 @@
+/* Reusa los estilos globales .combo-box / .combo-dropdown / .combo-option / .combo-empty
+   definidos en styles.scss (mismo patrón que el buscador de piezas en Presupuestos).
+   Acá solo añadimos: el botón toggle, el ajuste del padding del input para dar lugar al
+   botón, y el subtítulo de teléfono dentro de cada opción. */
+
+.combo-cliente {
+  position: relative;
+}
+
+.combo-cliente input {
+  width: 100%;
+  padding-right: 2.2rem;  /* espacio para el botón toggle */
+}
+
+.combo-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-sm);
+}
+
+.combo-toggle:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.combo-option {
+  text-align: left;
+}
+
+.combo-option strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.combo-sub {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}

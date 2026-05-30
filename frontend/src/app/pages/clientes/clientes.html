@@ -1,0 +1,98 @@
+﻿<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Clientes</h1>
+      <p>Alta, edicion e historial por cliente.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleForm()">
+      {{ showForm ? 'Cancelar' : 'Nuevo cliente' }}
+    </button>
+  </header>
+
+  @if (success) {
+    <div class="alert alert-success">{{ success }}</div>
+  }
+  @if (error) {
+    <div class="alert alert-error">{{ error }}</div>
+  }
+
+  @if (showForm) {
+    <article class="panel panel-stack">
+      <h3>{{ editingId ? 'Detalle y modificacion de cliente' : 'Alta de cliente' }}</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre</label>
+          <input [(ngModel)]="form.nombre" placeholder="Juan" />
+        </div>
+        <div class="field">
+          <label>Apellido</label>
+          <input [(ngModel)]="form.apellido" placeholder="Perez" />
+        </div>
+        <div class="field">
+          <label>Telefono</label>
+          <input [(ngModel)]="form.telefono" placeholder="11-xxxx-xxxx" />
+        </div>
+        <div class="field">
+          <label>WhatsApp (opcional)</label>
+          <input [(ngModel)]="form.whatsapp" placeholder="549111234567" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input [(ngModel)]="form.email" placeholder="cliente@mail.com" />
+        </div>
+        <div class="field field-span-2">
+          <label>Direccion</label>
+          <input [(ngModel)]="form.direccion" placeholder="Calle 123" />
+        </div>
+        <label class="field-check field-span-2">
+          <input type="checkbox" [(ngModel)]="form.activo" />
+          <span>Cliente activo</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">{{ editingId ? 'Guardar cambios' : 'Guardar cliente' }}</button>
+        <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Listado</h3>
+    <p class="hint">Doble click sobre un cliente para ver detalle y modificarlo.</p>
+    <div class="actions">
+      <div class="field" style="min-width: 260px;">
+        <label>Buscar</label>
+        <input [(ngModel)]="filtroTexto" placeholder="Nombre, apellido, telefono, email..." />
+      </div>
+    </div>
+    @if (loading) {
+      <p class="hint">Cargando clientes...</p>
+    }
+    <div class="list">
+      @if (!loading && rowsFiltradas().length === 0) {
+        <div class="list-item"><span>No hay clientes cargados.</span></div>
+      }
+      @for (row of rowsFiltradas(); track row.idCliente) {
+        <div class="list-item list-item-clickable" (dblclick)="editar(row)">
+          <div class="list-item-main">
+            <span class="list-item-title">{{ row.nombre }} {{ row.apellido }}</span>
+            <span class="list-item-sub">
+              ID {{ row.idCliente }} · {{ row.telefono }}
+              @if (row.whatsapp) { · WA: {{ row.whatsapp }} }
+              · {{ row.email }}
+              @if ((row.saldoPendiente ?? 0) > 0) { · Saldo: {{ row.saldoPendiente | currency:'$':'symbol':'1.2-2' }} }
+            </span>
+          </div>
+          <div class="actions">
+            @if ((row.saldoPendiente ?? 0) > 0) {
+              <span class="badge badge-danger">SALDO PENDIENTE</span>
+            }
+            <span class="badge">{{ row.activo ? 'ACTIVO' : 'INACTIVO' }}</span>
+            <button class="btn btn-soft btn-xs" type="button" (click)="editar(row)">Modificar</button>
+            <button class="btn btn-danger btn-xs" type="button" (click)="eliminar(row)">Borrar</button>
+          </div>
+        </div>
+      }
+    </div>
+  </article>
+</section>

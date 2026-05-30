@@ -1,0 +1,132 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Reportes</h1>
+      <p>Ganancias, mano de obra y movimientos de caja.</p>
+    </div>
+  </header>
+
+  @if (error) { <div class="alert alert-error">{{ error }}</div> }
+
+  <article class="panel">
+    <div class="tab-bar">
+      <button class="btn btn-xs" [class.btn-primary]="tab === 'mensual'" [class.btn-soft]="tab !== 'mensual'" (click)="cambiarTab('mensual')">Ganancias mensuales</button>
+      <button class="btn btn-xs" [class.btn-primary]="tab === 'semanal'" [class.btn-soft]="tab !== 'semanal'" (click)="cambiarTab('semanal')">Ganancias semanales</button>
+      <button class="btn btn-xs" [class.btn-primary]="tab === 'diario'" [class.btn-soft]="tab !== 'diario'" (click)="cambiarTab('diario')">Ganancias diarias</button>
+      <button class="btn btn-xs" [class.btn-primary]="tab === 'mano-obra'" [class.btn-soft]="tab !== 'mano-obra'" (click)="cambiarTab('mano-obra')">Mano de obra</button>
+      <button class="btn btn-xs" [class.btn-primary]="tab === 'movimiento-caja'" [class.btn-soft]="tab !== 'movimiento-caja'" (click)="cambiarTab('movimiento-caja')">Movimiento caja</button>
+    </div>
+
+    @if (loading) { <p class="hint">Cargando reporte...</p> }
+
+    <!-- Mensuales -->
+    @if (!loading && tab === 'mensual') {
+      <table class="data-table">
+        <thead><tr><th>Periodo</th><th class="text-right">Ingresos brutos</th><th class="text-right">Sueldos</th><th class="text-right">Ganancia neta</th></tr></thead>
+        <tbody>
+          @if (mensuales.length === 0) {
+            <tr><td colspan="4" class="hint">Sin datos.</td></tr>
+          }
+          @for (row of mensuales; track row.anioMes) {
+            <tr>
+              <td>{{ row.anioMes }}</td>
+              <td class="text-right">{{ row.ingresosBrutos | currency:'$':'symbol':'1.2-2' }}</td>
+              <td class="text-right">{{ row.totalSueldos | currency:'$':'symbol':'1.2-2' }}</td>
+              <td class="text-right" [class.ganancia-positiva]="row.gananciaNeta > 0" [class.ganancia-negativa]="row.gananciaNeta < 0">
+                {{ row.gananciaNeta | currency:'$':'symbol':'1.2-2' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    <!-- Semanales -->
+    @if (!loading && tab === 'semanal') {
+      <table class="data-table">
+        <thead><tr><th>Semana</th><th>Desde</th><th>Hasta</th><th class="text-right">Ingresos</th><th class="text-right">Sueldos</th><th class="text-right">Neto</th></tr></thead>
+        <tbody>
+          @if (semanales.length === 0) {
+            <tr><td colspan="6" class="hint">Sin datos.</td></tr>
+          }
+          @for (row of semanales; track row.anioSemana) {
+            <tr>
+              <td>{{ row.anioSemana }}</td>
+              <td>{{ row.desde | date:'dd/MM/yy' }}</td>
+              <td>{{ row.hasta | date:'dd/MM/yy' }}</td>
+              <td class="text-right">{{ row.ingresosBrutos | currency:'$':'symbol':'1.2-2' }}</td>
+              <td class="text-right">{{ row.totalSueldos | currency:'$':'symbol':'1.2-2' }}</td>
+              <td class="text-right" [class.ganancia-positiva]="row.gananciaNeta > 0" [class.ganancia-negativa]="row.gananciaNeta < 0">
+                {{ row.gananciaNeta | currency:'$':'symbol':'1.2-2' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    <!-- Diarias -->
+    @if (!loading && tab === 'diario') {
+      <table class="data-table">
+        <thead><tr><th>Fecha</th><th class="text-right">Ingresos</th><th class="text-right">Sueldos</th><th class="text-right">Neto</th></tr></thead>
+        <tbody>
+          @if (diarias.length === 0) {
+            <tr><td colspan="4" class="hint">Sin datos.</td></tr>
+          }
+          @for (row of diarias; track row.fecha) {
+            <tr>
+              <td>{{ row.fecha | date:'dd/MM/yyyy' }}</td>
+              <td class="text-right">{{ row.ingresosBrutos | currency:'$':'symbol':'1.2-2' }}</td>
+              <td class="text-right">{{ row.totalSueldos | currency:'$':'symbol':'1.2-2' }}</td>
+              <td class="text-right" [class.ganancia-positiva]="row.gananciaNeta > 0" [class.ganancia-negativa]="row.gananciaNeta < 0">
+                {{ row.gananciaNeta | currency:'$':'symbol':'1.2-2' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    <!-- Mano de obra -->
+    @if (!loading && tab === 'mano-obra') {
+      <table class="data-table">
+        <thead><tr><th>OT</th><th class="text-right">Total OT</th><th class="text-right">Costo mano obra</th><th class="text-right">Subtotal neto</th></tr></thead>
+        <tbody>
+          @if (manoObra.length === 0) {
+            <tr><td colspan="4" class="hint">Sin datos.</td></tr>
+          }
+          @for (row of manoObra; track row.idOt) {
+            <tr>
+              <td>{{ row.numeroOt || 'OT-' + row.idOt }}</td>
+              <td class="text-right">{{ row.totalOt | currency:'$':'symbol':'1.2-2' }}</td>
+              <td class="text-right">{{ row.costoManoObra | currency:'$':'symbol':'1.2-2' }}</td>
+              <td class="text-right">{{ row.subtotalNetoOt | currency:'$':'symbol':'1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    <!-- Movimiento caja -->
+    @if (!loading && tab === 'movimiento-caja') {
+      <table class="data-table">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="text-right">Monto</th></tr></thead>
+        <tbody>
+          @if (movimientoCaja.length === 0) {
+            <tr><td colspan="4" class="hint">Sin datos.</td></tr>
+          }
+          @for (row of movimientoCaja; track row.fecha + row.concepto) {
+            <tr>
+              <td>{{ row.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td><span [class]="row.monto > 0 ? 'badge badge-success' : 'badge badge-warn'">{{ row.tipo }}</span></td>
+              <td>{{ row.concepto }}</td>
+              <td class="text-right" [class.ganancia-positiva]="row.monto > 0" [class.ganancia-negativa]="row.monto < 0">
+                {{ row.monto | currency:'$':'symbol':'1.2-2' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </article>
+</section>

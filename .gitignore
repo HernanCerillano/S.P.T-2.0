@@ -50,3 +50,57 @@ Thumbs.db
 
 ### Maven repo local cacheado (artifact específico del workspace) ###
 .m2repo/
+
+# Documentos internos / propietarios — NO subir a Git
+Propuesta_*.docx
+Propuesta_*.pdf
+Instructivo_*.docx
+contexto_*.md
+ROADMAP_*.md
+roadmap_*.md
+prompt_*.md
+runbook_*.md
+guia_*.md
+plan_*.md
+Documentacion_SPT_*.rtf
+template.docx
+model.puml
+
+# Assets de marca (mantenerlos locales)
+Imagenes y recursos/
+
+# Estado de Claude Code
+.claude/
+
+# Build outputs
+release/
+target/
+dist/
+node_modules/
+
+# SQL de desarrollo (opcional — si querés trackearlos sacalos)
+alter_*.sql
+drop_*.sql
+fix_*.sql
+
+# IDE
+.vscode/launch.json
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Frontend: se commitea para versionarlo, pero NO se deploya en Railway
+# (Railway usa el Dockerfile que solo buildea el backend)
+# Angular:
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+# Tauri (Rust outputs — pesadísimos):
+frontend/src-tauri/target/
+frontend/src-tauri/gen/
+# JAR del backend bundleado por prepare-bundle.cjs — se regenera en cada build:
+frontend/src-tauri/resources/*.jar
+# Cargo.lock SÍ se commitea (buena práctica para apps Tauri — reproducibilidad de builds)

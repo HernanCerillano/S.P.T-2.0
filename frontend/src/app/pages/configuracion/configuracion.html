@@ -1,0 +1,180 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Configuracion</h1>
+      <p>Datos del taller y configuracion de WhatsApp.</p>
+    </div>
+  </header>
+
+  @if (success) { <div class="alert alert-success">{{ success }}</div> }
+  @if (error)   { <div class="alert alert-error">{{ error }}</div> }
+
+  @if (loading) { <p class="hint">Cargando configuracion...</p> }
+
+  @if (!loading) {
+    <article class="panel panel-stack">
+      <h3>Datos del taller</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre del taller</label>
+          <input [(ngModel)]="form.nombreTaller" placeholder="Taller XYZ" />
+        </div>
+        <div class="field">
+          <label>Telefono</label>
+          <input [(ngModel)]="form.telefono" placeholder="11-xxxx-xxxx" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input [(ngModel)]="form.email" placeholder="taller@mail.com" />
+        </div>
+        <div class="field">
+          <label>CUIT</label>
+          <input [(ngModel)]="form.cuit" placeholder="20-12345678-9" />
+        </div>
+        <div class="field field-span-2">
+          <label>Direccion</label>
+          <input [(ngModel)]="form.direccion" placeholder="Calle 123, Ciudad" />
+        </div>
+        <div class="field field-span-2">
+          <label>Logo (ruta o URL, opcional)</label>
+          <input [(ngModel)]="form.logoPath" placeholder="/ruta/al/logo.png" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">Guardar datos del taller</button>
+      </div>
+    </article>
+
+    <article class="panel panel-stack">
+      <h3>Recordatorios por WhatsApp</h3>
+      <div class="form-grid">
+        <label class="field-check field-span-2">
+          <input type="checkbox" [(ngModel)]="form.wpHabilitado" />
+          <span>Habilitar envio automatico de recordatorios</span>
+        </label>
+        @if (form.wpHabilitado) {
+          <div class="field">
+            <label>Horas de anticipacion</label>
+            <input type="number" min="1" max="168" [(ngModel)]="form.horasAnticipacionWp" />
+          </div>
+          <div class="field field-span-2">
+            <label>Plantilla del mensaje</label>
+            <textarea [(ngModel)]="form.plantillaWpRecordatorio" [placeholder]="placeholderPlantilla" rows="4"></textarea>
+            <p class="hint">{{ variablesHint }}</p>
+          </div>
+        }
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">Guardar configuracion de WhatsApp</button>
+      </div>
+    </article>
+  }
+
+  @if (successWa) { <div class="alert alert-success">{{ successWa }}</div> }
+  @if (errorWa)   { <div class="alert alert-error">{{ errorWa }}</div> }
+
+  @if (loadingWa) { <p class="hint">Cargando mensajes de WhatsApp...</p> }
+
+  @if (!loadingWa) {
+    <article class="panel panel-stack">
+      <h3>Recordatorio de cita <span class="badge badge-success">{{ templateRecordatorioEstado }}</span></h3>
+      <p class="hint">
+        Este es el texto del recordatorio que se muestra en el sistema.
+        <strong>El mensaje real que envía WhatsApp lo controla Twilio</strong> (template aprobado por Meta).
+        Si querés cambiar el mensaje que realmente le llega al cliente, hay que crear un template nuevo
+        en Twilio y esperar aprobación de Meta (1-2 días).
+      </p>
+      <div class="form-grid">
+        <div class="field field-span-2">
+          <label>Texto del recordatorio</label>
+          <textarea [(ngModel)]="formWa.templateRecordatorioBody" rows="3"></textarea>
+          <p class="hint">
+            Variables: &#123;nombre&#125;, &#123;taller&#125;, &#123;vehiculo&#125;,
+            &#123;fecha&#125;, &#123;hora&#125;.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel panel-stack">
+      <h3>Mensajes automaticos de WhatsApp</h3>
+      <p class="hint">
+        Textos que reciben tus clientes cuando responden al recordatorio o te escriben.
+        Variables disponibles: &#123;nombre&#125;, &#123;taller&#125;, &#123;fecha&#125;, &#123;hora&#125;.
+      </p>
+
+      <div class="form-grid">
+        <div class="field field-span-2">
+          <label>Respuesta cuando el cliente confirma ("Confirmar" / "Si")</label>
+          <textarea [(ngModel)]="formWa.respuestaConfirmar" rows="2"></textarea>
+        </div>
+        <div class="field field-span-2">
+          <label>Respuesta cuando el cliente cancela ("Cancelar" / "No")</label>
+          <textarea [(ngModel)]="formWa.respuestaCancelar" rows="2"></textarea>
+        </div>
+        <div class="field field-span-2">
+          <label>Mensaje de bienvenida (cliente desconocido escribe por primera vez)</label>
+          <textarea [(ngModel)]="formWa.respuestaBienvenida" rows="2"></textarea>
+        </div>
+        <div class="field field-span-2">
+          <label>Mensaje fallback (no se entendio el mensaje)</label>
+          <textarea [(ngModel)]="formWa.respuestaNoEntendido" rows="2"></textarea>
+        </div>
+      </div>
+
+      <h3>Baja automatica (Opt-out)</h3>
+      <p class="hint">
+        Requerido por Meta. Si el cliente manda alguna de estas palabras, deja de recibir
+        mensajes automaticos (se marca <code>whatsapp_habilitado = false</code>).
+      </p>
+      <div class="form-grid">
+        <label class="field-check field-span-2">
+          <input type="checkbox" [(ngModel)]="formWa.optOutHabilitado" />
+          <span>Activar baja automatica</span>
+        </label>
+        @if (formWa.optOutHabilitado) {
+          <div class="field field-span-2">
+            <label>Palabras que disparan la baja (separadas por coma)</label>
+            <input [(ngModel)]="formWa.optOutPalabrasClave" placeholder="STOP,BAJA,CANCELAR" />
+          </div>
+          <div class="field field-span-2">
+            <label>Mensaje de confirmacion de baja</label>
+            <textarea [(ngModel)]="formWa.respuestaOptOut" rows="2"></textarea>
+          </div>
+        }
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="savingWa" (click)="guardarWhatsapp()">Guardar mensajes de WhatsApp</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Log de mensajes WhatsApp</h3>
+    @if (mensajesLoading) { <p class="hint">Cargando mensajes...</p> }
+    <div class="list">
+      @if (!mensajesLoading && mensajes.length === 0) {
+        <div class="list-item"><span>Sin mensajes registrados.</span></div>
+      }
+      @for (msg of mensajes; track msg.idMensaje) {
+        <div class="list-item">
+          <div class="list-item-main">
+            <span class="list-item-title">{{ msg.telefonoDestino }} — Cita {{ msg.idCita }}</span>
+            <span class="list-item-sub">
+              {{ msg.contenido | slice:0:100 }}{{ msg.contenido.length > 100 ? '...' : '' }}
+              @if (msg.fechaEnvio) { · Enviado: {{ msg.fechaEnvio | date:'dd/MM/yyyy HH:mm' }} }
+              @if (msg.errorMensaje) { · Error: {{ msg.errorMensaje }} }
+            </span>
+          </div>
+          <div class="actions">
+            <span [class]="estadoBadge(msg.estado)">{{ msg.estado }}</span>
+            <span class="hint">Intentos: {{ msg.intentos }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </article>
+</section>

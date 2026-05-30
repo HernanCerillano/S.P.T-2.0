@@ -1,0 +1,76 @@
+﻿<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Servicios</h1>
+      <p>Tipos de trabajo reutilizables para el presupuesto.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleForm()">{{ showForm ? 'Cancelar' : 'Nuevo servicio' }}</button>
+  </header>
+
+  @if (success) {
+    <div class="alert alert-success">{{ success }}</div>
+  }
+  @if (error) {
+    <div class="alert alert-error">{{ error }}</div>
+  }
+
+  @if (showForm) {
+    <article class="panel panel-stack">
+      <h3>{{ editingId ? 'Modificar servicio' : 'Alta de servicio' }}</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre</label>
+          <input [(ngModel)]="form.nombre" />
+        </div>
+        <div class="field">
+          <label>Precio base</label>
+          <input type="number" step="0.01" [(ngModel)]="form.precioBase" />
+        </div>
+        <div class="field field-span-2">
+          <label>Descripcion</label>
+          <textarea [(ngModel)]="form.descripcion"></textarea>
+        </div>
+        <label class="field-check field-span-2">
+          <input type="checkbox" [(ngModel)]="form.activo" />
+          <span>Activo</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">{{ editingId ? 'Guardar cambios' : 'Guardar servicio' }}</button>
+        <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Servicios configurados</h3>
+    <p class="hint">Doble click o boton para ver detalle y modificar un servicio.</p>
+    <div class="actions">
+      <div class="field" style="min-width: 260px;">
+        <label>Buscar</label>
+        <input [(ngModel)]="filtroTexto" placeholder="Nombre o descripcion..." />
+      </div>
+    </div>
+    @if (loading) {
+      <p class="hint">Cargando servicios...</p>
+    }
+    <div class="list">
+      @if (!loading && rowsFiltradas().length === 0) {
+        <div class="list-item"><span>No hay servicios cargados.</span></div>
+      }
+      @for (row of rowsFiltradas(); track row.idServicio) {
+        <div class="list-item list-item-clickable" (dblclick)="editar(row)">
+          <div class="list-item-main">
+            <span class="list-item-title">{{ row.nombre }}</span>
+            <span class="list-item-sub">ID {{ row.idServicio }} · $ {{ row.precioBase }} · {{ row.descripcion }}</span>
+          </div>
+          <div class="actions">
+            <span class="badge">{{ row.activo ? 'ACTIVO' : 'INACTIVO' }}</span>
+            <button class="btn btn-soft btn-xs" (click)="editar(row)">Modificar</button>
+            <button class="btn btn-danger btn-xs" type="button" (click)="eliminar(row)">Borrar</button>
+          </div>
+        </div>
+      }
+    </div>
+  </article>
+</section>

@@ -1,0 +1,88 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-ribbon">
+        <img class="brand-logo" src="logo-suspension-tito.png" alt="Suspensión Tito" />
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      @for (item of navItems; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active" class="nav-link">
+          <span class="icon">{{ item.emoji }}</span>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <main class="app-main">
+    <section class="view">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+
+  @if (!activacionCargando && !activado) {
+    <section class="activation-overlay">
+      <div class="activation-panel">
+        <h2>Activacion requerida</h2>
+        <p>Ingresa la clave una sola vez para habilitar esta instalacion en esta PC.</p>
+        <div class="field">
+          <label>Clave de activacion</label>
+          <input [(ngModel)]="activationKey" type="password" placeholder="Clave de activacion" />
+        </div>
+        @if (activationError) {
+          <div class="alert alert-error">{{ activationError }}</div>
+        }
+        <div class="actions">
+          <button class="btn btn-primary" type="button" (click)="activarAplicacion()">Activar</button>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (!activacionCargando && activado && notificaciones.length > 0) {
+    <section class="notification-overlay">
+      <div class="notification-panel">
+        <div class="notification-panel-head">
+          <h3>Proximas citas</h3>
+          <span class="badge">{{ notificaciones.length }}</span>
+        </div>
+        <div class="notification-list">
+          @for (notificacion of notificaciones; track notificacion.idCita) {
+            <div class="notification-item">
+              <p class="notification-title">{{ notificacionTexto(notificacion) }}</p>
+              <p class="notification-meta">{{ notificacionDetalle(notificacion) }}</p>
+              <div class="notification-actions">
+                <span class="notification-note">{{ notificacion.observaciones.trim() || 'Sin observaciones' }}</span>
+                <button class="btn btn-soft btn-xs" type="button" (click)="marcarNotificacionVista(notificacion.idCita)">Visto</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (confirmState(); as modal) {
+    <section class="confirm-overlay">
+      <div class="confirm-panel">
+        <div class="confirm-head">
+          <h3>{{ modal.title }}</h3>
+        </div>
+        <p class="confirm-message">{{ modal.message }}</p>
+        <div class="actions confirm-actions">
+          <button class="btn btn-soft" type="button" (click)="cancelarDialogo()">{{ modal.cancelText }}</button>
+          <button
+            class="btn"
+            [class.btn-danger]="modal.tone === 'danger'"
+            [class.btn-primary]="modal.tone !== 'danger'"
+            type="button"
+            (click)="confirmarDialogo()">
+            {{ modal.confirmText }}
+          </button>
+        </div>
+      </div>
+    </section>
+  }
+</div>

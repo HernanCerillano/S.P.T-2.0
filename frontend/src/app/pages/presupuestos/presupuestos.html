@@ -1,0 +1,575 @@
+﻿<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Presupuestos</h1>
+      <p>Creacion, edicion, PDF y conversion a orden de trabajo.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleForm()">{{ showForm ? 'Cancelar' : 'Nuevo presupuesto' }}</button>
+  </header>
+
+  @if (success) {
+    <div class="alert alert-success">{{ success }}</div>
+  }
+  @if (error) {
+    <div class="alert alert-error">{{ error }}</div>
+  }
+
+  @if (showForm) {
+    <article class="panel panel-stack">
+      <h3>Alta de presupuesto</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Cliente</label>
+          <app-cliente-buscador
+            [seleccionado]="clienteSeleccionadoAlta"
+            (seleccionadoChange)="onClienteSeleccionadoAlta($event)" />
+        </div>
+        <div class="field">
+          <label>Vehiculo</label>
+          <select [(ngModel)]="form.idVehiculo" [disabled]="form.idCliente === 0">
+            <option [ngValue]="0">Seleccionar vehiculo</option>
+            @for (vehiculo of vehiculosParaCliente(form.idCliente); track vehiculo.idVehiculo) {
+              <option [ngValue]="vehiculo.idVehiculo">{{ vehiculoLabel(vehiculo.idVehiculo) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field field-span-2">
+          <label>Resumen</label>
+          <textarea [(ngModel)]="form.resumen"></textarea>
+        </div>
+        <label class="field-check field-span-2">
+          <input type="checkbox" [(ngModel)]="form.ocultarPreciosItems" />
+          <span>Ocultar precios de items en el PDF</span>
+        </label>
+      </div>
+
+      <article class="panel panel-soft section-panel">
+        <h3>Items iniciales (opcional)</h3>
+        <p class="hint">Podes cargar piezas/servicios antes de guardar el presupuesto.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label>Tipo item</label>
+            <select [(ngModel)]="altaDetalleForm.tipoItem" (ngModelChange)="onTipoItemAltaChange()">
+              @for (tipo of tiposItem; track tipo) {
+                <option [value]="tipo">{{ tipo }}</option>
+              }
+            </select>
+          </div>
+
+          @if (altaDetalleForm.tipoItem === 'PIEZA') {
+            <div class="field">
+              <label>Pieza</label>
+              <div class="combo-box">
+                <input
+                  [(ngModel)]="altaPiezaBusqueda"
+                  placeholder="Seleccionar pieza"
+                  (focus)="abrirCombo('altaPieza')"
+                  (input)="onAltaPiezaInput()"
+                  (blur)="cerrarComboConDelay()" />
+                @if (comboAbierto === 'altaPieza') {
+                  <div class="combo-dropdown">
+                    @if (piezasAltaFiltradas().length === 0) {
+                      <div class="combo-empty">Sin resultados</div>
+                    }
+                    @for (pieza of piezasAltaFiltradas(); track pieza.idPieza) {
+                      <button
+                        class="combo-option"
+                        type="button"
+                        (mousedown)="seleccionarPiezaAlta(pieza)">
+                        {{ piezaOpcionLabel(pieza) }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (altaDetalleForm.tipoItem === 'SERVICIO') {
+            <div class="field">
+              <label>Servicio</label>
+              <div class="combo-box">
+                <input
+                  [(ngModel)]="altaServicioBusqueda"
+                  placeholder="Seleccionar servicio"
+                  (focus)="abrirCombo('altaServicio')"
+                  (input)="onAltaServicioInput()"
+                  (blur)="cerrarComboConDelay()" />
+                @if (comboAbierto === 'altaServicio') {
+                  <div class="combo-dropdown">
+                    @if (serviciosAltaFiltrados().length === 0) {
+                      <div class="combo-empty">Sin resultados</div>
+                    }
+                    @for (servicio of serviciosAltaFiltrados(); track servicio.idServicio) {
+                      <button class="combo-option" type="button" (mousedown)="seleccionarServicioAlta(servicio)">
+                        {{ servicioOpcionLabel(servicio) }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (altaDetalleForm.tipoItem === 'PIEZA') {
+            <div class="field">
+              <label>Cantidad</label>
+              <input type="number" min="1" [(ngModel)]="altaDetalleForm.cantidad" />
+            </div>
+          }
+          @if (altaDetalleForm.tipoItem === 'SERVICIO') {
+            <div class="field">
+              <label>Cantidad</label>
+              <input [ngModel]="1" readonly />
+            </div>
+          }
+          <div class="field">
+            <label>Precio unitario (opcional)</label>
+            <input type="number" min="0" step="0.01" [(ngModel)]="altaDetalleForm.precioUnitario" />
+          </div>
+          <div class="field field-span-2">
+            <label>Otro nombre / especificacion (opcional)</label>
+            <input [(ngModel)]="altaDetalleForm.descripcionItem" placeholder="Si vacio, se completa automaticamente" />
+          </div>
+        </div>
+        <div class="actions split-actions">
+          <button class="btn btn-soft" type="button" (click)="agregarItemAlta()">
+            Agregar {{ altaDetalleForm.tipoItem === 'PIEZA' ? 'pieza' : 'servicio' }}
+          </button>
+          @if (altaDetalleForm.tipoItem === 'PIEZA') {
+            <button class="btn btn-soft push-right" type="button" (click)="toggleCrearPiezaAlta()">
+              {{ showCrearPiezaAlta ? 'Cancelar nueva pieza' : 'Crear pieza nueva' }}
+            </button>
+          }
+        </div>
+        @if (altaDetalleForm.tipoItem === 'PIEZA' && showCrearPiezaAlta) {
+          <div class="form-grid">
+            <div class="field">
+              <label>Nombre pieza</label>
+              <input [(ngModel)]="quickPiezaAltaForm.nombre" />
+            </div>
+            <div class="field">
+              <label>Marca</label>
+              <input [(ngModel)]="quickPiezaAltaForm.marca" />
+            </div>
+            <div class="field">
+              <label>Medidas</label>
+              <input [(ngModel)]="quickPiezaAltaForm.medidas" />
+            </div>
+            <div class="field">
+              <label>Precio</label>
+              <input type="number" min="0" step="0.01" [(ngModel)]="quickPiezaAltaForm.precioUnitario" />
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary btn-xs" type="button" [disabled]="creandoPiezaRapida" (click)="crearPiezaRapida('alta')">Guardar pieza</button>
+          </div>
+        }
+        <p class="hint">Subtotal estimado: $ {{ subtotalAltaPreview() }}</p>
+
+        <div class="list">
+          @if (altaDetalles.length === 0) {
+            <div class="list-item"><span>Sin items iniciales cargados.</span></div>
+          }
+          @for (item of altaDetalles; track $index) {
+            <div class="list-item">
+              <div class="list-item-main">
+                <span class="list-item-title">{{ item.tipoItem }} · {{ item.descripcionItem }}</span>
+                <span class="list-item-sub">Cant. {{ item.cantidad }} · $ {{ item.precioUnitario }} · Subtotal $ {{ item.subtotal }}</span>
+              </div>
+              <button class="btn btn-soft btn-xs" type="button" (click)="quitarItemAlta($index)">Quitar</button>
+            </div>
+          }
+        </div>
+        @if (altaDetalles.length > 0) {
+          <p class="hint">Total estimado de items iniciales: $ {{ totalItemsAlta() }}</p>
+        }
+      </article>
+
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">Guardar presupuesto</button>
+        <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Listado</h3>
+    <p class="hint">Doble click sobre un presupuesto para abrir su detalle.</p>
+    <div class="actions">
+      <div class="field" style="min-width: 220px;">
+        <label>Filtro por estado</label>
+        <select [(ngModel)]="filtroEstado">
+          <option [ngValue]="''">Todos</option>
+          @for (estado of estados; track estado) {
+            <option [ngValue]="estado">{{ estado }}</option>
+          }
+        </select>
+      </div>
+      <div class="field" style="min-width: 180px;">
+        <label>Patente</label>
+        <input [(ngModel)]="filtroPatente" placeholder="AE123BC" />
+      </div>
+      <button class="btn btn-soft" (click)="aplicarFiltros()">Aplicar filtro</button>
+      <button class="btn btn-soft" (click)="limpiarFiltros()">Ver todos</button>
+    </div>
+    @if (loading) {
+      <p class="hint">Cargando presupuestos...</p>
+    }
+    <div class="list">
+      @if (!loading && rows.length === 0) {
+        <div class="list-item"><span>No hay presupuestos cargados.</span></div>
+      }
+      @for (row of rows; track row.idPresupuesto) {
+        <div
+          class="list-item list-item-clickable"
+          [class.is-selected]="seleccionado?.idPresupuesto === row.idPresupuesto"
+          (dblclick)="abrirDetalle(row)">
+          <div class="list-item-main">
+            <span class="list-item-title">{{ numeroPresupuestoLabel(row) }}</span>
+            <span class="list-item-sub">
+              {{ clienteLabel(row.idCliente) }} · {{ vehiculoLabel(row.idVehiculo) }} · $ {{ totalMostrado(row) }}
+              @if (row.precioPersonalizado != null) { <span class="badge badge-warn" style="font-size:0.65rem">✎</span> }
+            </span>
+          </div>
+          <span [class]="badgeClass(row.estado)">{{ row.estado }}</span>
+        </div>
+        @if (seleccionado?.idPresupuesto === row.idPresupuesto) {
+          <ng-container [ngTemplateOutlet]="detallePresupuestoTemplate"></ng-container>
+        }
+      }
+    </div>
+  </article>
+
+  <ng-template #detallePresupuestoTemplate>
+    <article class="panel panel-stack">
+      <div class="page-head detail-head">
+        <div>
+          <h3>Detalle de presupuesto: {{ numeroPresupuestoLabel(seleccionado) }}</h3>
+          <p class="hint">
+            ID {{ seleccionado?.idPresupuesto }} · Total: $ {{ totalMostrado(seleccionado) }}
+            @if (seleccionado?.precioPersonalizado != null) { <span class="badge badge-warn">Precio personalizado</span> }
+          </p>
+        </div>
+        <div class="actions">
+          @if (!editandoSeleccionado) {
+            <button class="btn btn-soft" (click)="activarEdicion()">Modificar</button>
+          }
+          @if (editandoSeleccionado) {
+            <button class="btn btn-primary" [disabled]="guardandoSeleccionado" (click)="guardarCambiosSeleccionado()">Guardar cambios</button>
+            <button class="btn btn-soft" [disabled]="guardandoSeleccionado" (click)="cancelarEdicionSeleccionado()">Cancelar edicion</button>
+          }
+          @if (seleccionado?.estado === 'ACTIVO') {
+            <button class="btn btn-primary" [disabled]="guardandoSeleccionado" (click)="convertirSeleccionadoAOt()">Pasar a OT</button>
+          }
+          <button class="btn btn-soft" [disabled]="guardandoSeleccionado || downloadingPdf" (click)="descargarPdfSeleccionado()">Descargar PDF</button>
+          <button
+            class="btn btn-soft"
+            [disabled]="guardandoSeleccionado || seleccionado?.estado === 'ARCHIVADO' || seleccionado?.estado === 'ACEPTADO'"
+            (click)="archivarSeleccionado()">
+            Archivar
+          </button>
+          @if (seleccionado?.estado === 'ARCHIVADO') {
+            <button class="btn btn-soft" [disabled]="guardandoSeleccionado" (click)="desarchivarSeleccionado()">Desarchivar</button>
+          }
+          <button class="btn btn-danger" [disabled]="guardandoSeleccionado" (click)="eliminarSeleccionado()">Borrar</button>
+          <button class="btn btn-soft" (click)="cerrarDetalle()">Cerrar</button>
+        </div>
+      </div>
+
+      @if (detalleLoading) {
+        <p class="hint">Cargando detalle...</p>
+      }
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Numero</label>
+          <input [(ngModel)]="seleccionadoForm.numeroPresupuesto" disabled />
+        </div>
+        <div class="field">
+          <label>Estado</label>
+          <select [(ngModel)]="seleccionadoForm.estado" [disabled]="!editandoSeleccionado">
+            @for (estado of estados; track estado) {
+              <option [value]="estado">{{ estado }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Cliente</label>
+          <select [(ngModel)]="seleccionadoForm.idCliente" [disabled]="!editandoSeleccionado">
+            @for (cliente of clientesCatalogo; track cliente.idCliente) {
+              <option [ngValue]="cliente.idCliente">{{ clienteLabel(cliente.idCliente) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Vehiculo</label>
+          <select [(ngModel)]="seleccionadoForm.idVehiculo" [disabled]="!editandoSeleccionado">
+            @for (vehiculo of vehiculosParaCliente(seleccionadoForm.idCliente); track vehiculo.idVehiculo) {
+              <option [ngValue]="vehiculo.idVehiculo">{{ vehiculoLabel(vehiculo.idVehiculo) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field field-span-2">
+          <label>Resumen</label>
+          <textarea [(ngModel)]="seleccionadoForm.resumen" [disabled]="!editandoSeleccionado"></textarea>
+        </div>
+        <label class="field-check field-span-2">
+          <input type="checkbox" [(ngModel)]="seleccionadoForm.ocultarPreciosItems" [disabled]="!editandoSeleccionado" />
+          <span>Ocultar precios de items al imprimir</span>
+        </label>
+        <label class="field-check field-span-2">
+          <input type="checkbox" [(ngModel)]="usarPrecioPersonalizado" [disabled]="!editandoSeleccionado" (ngModelChange)="onTogglePrecioPersonalizado()" />
+          <span>Precio personalizado (sobreescribe el total calculado)</span>
+        </label>
+        @if (usarPrecioPersonalizado) {
+          <div class="field">
+            <label>Precio personalizado</label>
+            <input type="number" step="0.01" min="0" [(ngModel)]="seleccionadoForm.precioPersonalizado" [disabled]="!editandoSeleccionado" />
+          </div>
+        }
+      </div>
+
+      <div class="grid grid-2-fixed">
+        <article class="panel panel-soft section-panel">
+          <h3>Items del presupuesto</h3>
+          <div class="list">
+            @if (!detalleLoading && detalles.length === 0) {
+              <div class="list-item"><span>Sin items cargados.</span></div>
+            }
+            @for (item of detalles; track item.idDetallePresupuesto) {
+              <div class="list-item">
+                <div class="list-item-main">
+                  <span class="list-item-title">{{ item.tipoItem }} · {{ item.descripcionItem }}</span>
+                  @if (!seleccionado?.ocultarPreciosItems) {
+                    <span class="list-item-sub">Cant. {{ item.cantidad }} · $ {{ item.precioUnitario }} · Subtotal $ {{ item.subtotal }}</span>
+                  } @else {
+                    <span class="list-item-sub">Cant. {{ item.cantidad }}</span>
+                  }
+                </div>
+                <div class="actions">
+                  <button class="btn btn-soft btn-xs" [disabled]="detalleSaving || !editandoSeleccionado" (click)="editarDetalle(item)">Editar</button>
+                  <button class="btn btn-soft btn-xs" [disabled]="detalleSaving || !editandoSeleccionado" (click)="eliminarDetalle(item.idDetallePresupuesto)">Quitar</button>
+                </div>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel panel-soft section-panel">
+          <h3>Agregar pieza/servicio</h3>
+          @if (!editandoSeleccionado) {
+            <p class="hint">Detalle en solo lectura. Toca <strong>Modificar</strong> para agregar o quitar items.</p>
+          }
+          <div class="form-grid">
+            <div class="field">
+              <label>Tipo item</label>
+              <select [(ngModel)]="detalleForm.tipoItem" (ngModelChange)="onTipoItemDetalleChange()" [disabled]="!editandoSeleccionado">
+                @for (tipo of tiposItem; track tipo) {
+                  <option [value]="tipo">{{ tipo }}</option>
+                }
+              </select>
+            </div>
+
+            @if (detalleForm.tipoItem === 'PIEZA') {
+              <div class="field">
+                <label>Pieza</label>
+                <div class="combo-box">
+                  <input
+                    [(ngModel)]="detallePiezaBusqueda"
+                    placeholder="Seleccionar pieza"
+                    [disabled]="!editandoSeleccionado"
+                    (focus)="abrirCombo('detallePieza', !editandoSeleccionado)"
+                    (input)="onDetallePiezaInput()"
+                    (blur)="cerrarComboConDelay()" />
+                  @if (comboAbierto === 'detallePieza') {
+                    <div class="combo-dropdown">
+                      @if (piezasDetalleFiltradas().length === 0) {
+                        <div class="combo-empty">Sin resultados</div>
+                      }
+                      @for (pieza of piezasDetalleFiltradas(); track pieza.idPieza) {
+                        <button
+                          class="combo-option"
+                          type="button"
+                          (mousedown)="seleccionarPiezaDetalle(pieza)">
+                          {{ piezaOpcionLabel(pieza) }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            @if (detalleForm.tipoItem === 'SERVICIO') {
+              <div class="field">
+                <label>Servicio</label>
+                <div class="combo-box">
+                  <input
+                    [(ngModel)]="detalleServicioBusqueda"
+                    placeholder="Seleccionar servicio"
+                    [disabled]="!editandoSeleccionado"
+                    (focus)="abrirCombo('detalleServicio', !editandoSeleccionado)"
+                    (input)="onDetalleServicioInput()"
+                    (blur)="cerrarComboConDelay()" />
+                  @if (comboAbierto === 'detalleServicio') {
+                    <div class="combo-dropdown">
+                      @if (serviciosDetalleFiltrados().length === 0) {
+                        <div class="combo-empty">Sin resultados</div>
+                      }
+                      @for (servicio of serviciosDetalleFiltrados(); track servicio.idServicio) {
+                        <button class="combo-option" type="button" (mousedown)="seleccionarServicioDetalle(servicio)">
+                          {{ servicioOpcionLabel(servicio) }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (detalleForm.tipoItem === 'PIEZA') {
+              <div class="field">
+                <label>Cantidad</label>
+                <input type="number" min="1" [(ngModel)]="detalleForm.cantidad" [disabled]="!editandoSeleccionado" />
+              </div>
+            }
+            @if (detalleForm.tipoItem === 'SERVICIO') {
+              <div class="field">
+                <label>Cantidad</label>
+                <input [ngModel]="1" readonly [disabled]="!editandoSeleccionado" />
+              </div>
+            }
+            <div class="field">
+              <label>Precio unitario (opcional)</label>
+              <input type="number" min="0" step="0.01" [(ngModel)]="detalleForm.precioUnitario" placeholder="Si vacio, toma catalogo" [disabled]="!editandoSeleccionado" />
+            </div>
+            <div class="field field-span-2">
+              <label>Otro nombre / especificacion (opcional)</label>
+              <input [(ngModel)]="detalleForm.descripcionItem" placeholder="Si vacio, se completa automaticamente" [disabled]="!editandoSeleccionado" />
+            </div>
+          </div>
+          @if (detalleForm.tipoItem === 'PIEZA' && editandoSeleccionado) {
+            <div class="actions">
+              <button class="btn btn-soft btn-xs" type="button" (click)="toggleCrearPiezaDetalle()">
+                {{ showCrearPiezaDetalle ? 'Cancelar nueva pieza' : 'Crear pieza nueva' }}
+              </button>
+            </div>
+            @if (showCrearPiezaDetalle) {
+              <div class="form-grid">
+                <div class="field">
+                  <label>Nombre pieza</label>
+                  <input [(ngModel)]="quickPiezaDetalleForm.nombre" />
+                </div>
+                <div class="field">
+                  <label>Marca</label>
+                  <input [(ngModel)]="quickPiezaDetalleForm.marca" />
+                </div>
+                <div class="field">
+                  <label>Medidas</label>
+                  <input [(ngModel)]="quickPiezaDetalleForm.medidas" />
+                </div>
+                <div class="field">
+                  <label>Precio</label>
+                  <input type="number" min="0" step="0.01" [(ngModel)]="quickPiezaDetalleForm.precioUnitario" />
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary btn-xs" type="button" [disabled]="creandoPiezaRapida" (click)="crearPiezaRapida('detalle')">Guardar pieza</button>
+              </div>
+            }
+          }
+          <p class="hint">Subtotal estimado (si cargaste precio): $ {{ subtotalPreview() }}</p>
+          <div class="actions">
+            <button class="btn btn-primary" [disabled]="detalleSaving || detalleLoading || !editandoSeleccionado" (click)="guardarDetalle()">
+              {{ detalleEditandoId ? 'Guardar item' : 'Agregar item' }}
+            </button>
+            @if (detalleEditandoId) {
+              <button class="btn btn-soft" [disabled]="detalleSaving" (click)="cancelarEdicionDetalle()">Cancelar edicion item</button>
+            }
+          </div>
+        </article>
+      </div>
+
+      <!-- ── Factura inline ───────────────────────────────────────────────── -->
+      <article class="panel panel-soft panel-stack">
+        <div class="actions">
+          <h3 style="flex:1; margin:0;">Factura</h3>
+          @if (!facturaDePresupuesto) {
+            <button class="btn btn-soft btn-xs" (click)="toggleFacturaPanel()">
+              {{ showFacturaPanel ? 'Cancelar' : 'Generar factura' }}
+            </button>
+          }
+          @if (facturaDePresupuesto) {
+            <button class="btn btn-soft btn-xs" [disabled]="downloadingFacturaPdf" (click)="descargarFacturaPdfPresupuesto()">Descargar PDF factura</button>
+          }
+        </div>
+
+        @if (!facturaDePresupuesto && !showFacturaPanel) {
+          <p class="hint">Este presupuesto aun no tiene factura emitida.</p>
+        }
+
+        @if (facturaDePresupuesto) {
+          <div class="form-grid">
+            <div class="field">
+              <label>Numero</label>
+              <input [value]="facturaDePresupuesto.numeroFactura" readonly />
+            </div>
+            <div class="field">
+              <label>Tipo</label>
+              <input [value]="facturaDePresupuesto.tipoFactura" readonly />
+            </div>
+            <div class="field">
+              <label>Subtotal</label>
+              <input [value]="'$ ' + facturaDePresupuesto.subtotal" readonly />
+            </div>
+            <div class="field">
+              <label>Impuestos</label>
+              <input [value]="'$ ' + facturaDePresupuesto.impuestos" readonly />
+            </div>
+            <div class="field">
+              <label>Total</label>
+              <input [value]="'$ ' + facturaDePresupuesto.total" readonly />
+            </div>
+            <div class="field">
+              <label>Estado</label>
+              <input [value]="facturaDePresupuesto.estado" readonly />
+            </div>
+            <div class="field">
+              <label>Fecha emision</label>
+              <input [value]="facturaDePresupuesto.fechaEmision" readonly />
+            </div>
+          </div>
+        }
+
+        @if (showFacturaPanel && !facturaDePresupuesto) {
+          <div class="form-grid">
+            <div class="field">
+              <label>Numero factura</label>
+              <input [(ngModel)]="facturaForm.numeroFactura" placeholder="0001-00000001" />
+            </div>
+            <div class="field">
+              <label>Tipo</label>
+              <select [(ngModel)]="facturaForm.tipoFactura">
+                @for (tipo of tiposFactura; track tipo) {
+                  <option [value]="tipo">{{ tipo }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label>Impuestos ($)</label>
+              <input type="number" step="0.01" min="0" [(ngModel)]="facturaForm.impuestos" />
+            </div>
+            <div class="field field-span-2">
+              <label>Observaciones</label>
+              <textarea [(ngModel)]="facturaForm.observaciones"></textarea>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" [disabled]="savingFactura" (click)="crearFacturaParaPresupuesto()">Emitir factura</button>
+            <button class="btn btn-soft" type="button" (click)="toggleFacturaPanel()">Cancelar</button>
+          </div>
+        }
+      </article>
+    </article>
+  </ng-template>
+</section>

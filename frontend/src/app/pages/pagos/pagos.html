@@ -1,0 +1,244 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Pagos y Señas</h1>
+      <p>Registro de cobros, saldos y medios de pago.</p>
+    </div>
+    @if (tabPagos === 'clientes') {
+      <button class="btn btn-primary" (click)="toggleForm()">{{ showForm ? 'Cancelar' : 'Registrar pago' }}</button>
+    }
+    @if (tabPagos === 'empleados') {
+      <button class="btn btn-primary" (click)="toggleFormEmpleado()">{{ showFormEmpleado ? 'Cancelar' : 'Registrar pago a empleado' }}</button>
+    }
+  </header>
+
+  <div class="tab-bar">
+    <button class="btn btn-xs" [class.btn-primary]="tabPagos === 'clientes'" [class.btn-soft]="tabPagos !== 'clientes'" (click)="cambiarTab('clientes')">Pagos de clientes</button>
+    <button class="btn btn-xs" [class.btn-primary]="tabPagos === 'empleados'" [class.btn-soft]="tabPagos !== 'empleados'" (click)="cambiarTab('empleados')">Pagos a empleados</button>
+  </div>
+
+  @if (success) {
+    <div class="alert alert-success">{{ success }}</div>
+  }
+  @if (error) {
+    <div class="alert alert-error">{{ error }}</div>
+  }
+
+  <!-- ── Pagos de clientes ─────────────────────────────────────────────────── -->
+  @if (tabPagos === 'clientes') {
+    @if (showForm) {
+      <article class="panel panel-stack">
+        <h3>Registro de pago</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label>Cliente</label>
+            <select [(ngModel)]="clienteSeleccionado" (ngModelChange)="onClienteChange()">
+              <option [ngValue]="0">Seleccionar cliente</option>
+              @for (cliente of clientesCatalogo; track cliente.idCliente) {
+                <option [ngValue]="cliente.idCliente">{{ clienteLabel(cliente.idCliente) }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label>Vehiculo</label>
+            <select [(ngModel)]="vehiculoSeleccionado" (ngModelChange)="onVehiculoChange()">
+              <option [ngValue]="0">Seleccionar vehiculo</option>
+              @for (vehiculo of vehiculosParaCliente(clienteSeleccionado); track vehiculo.idVehiculo) {
+                <option [ngValue]="vehiculo.idVehiculo">{{ vehiculoLabel(vehiculo.idVehiculo) }}</option>
+              }
+            </select>
+          </div>
+          <div class="field field-span-2">
+            <label>Orden de trabajo</label>
+            <select [(ngModel)]="form.idOt" (ngModelChange)="onOtChange()">
+              <option [ngValue]="0">Seleccionar OT</option>
+              @for (ot of otsFiltradas(); track ot.idOt) {
+                <option [ngValue]="ot.idOt">{{ otLabel(ot.idOt) }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label>Monto</label>
+            <input type="number" step="0.01" [(ngModel)]="form.monto" />
+          </div>
+          <div class="field">
+            <label>Metodo</label>
+            <select [(ngModel)]="form.metodoPago">
+              @for (metodo of metodos; track metodo) {
+                <option [value]="metodo">{{ metodo }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label>Fecha pago (opcional)</label>
+            <input type="datetime-local" [(ngModel)]="form.fechaPago" />
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">Guardar pago</button>
+          <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+        </div>
+      </article>
+    }
+
+    <article class="panel">
+      <h3>Ultimos pagos</h3>
+      <p class="hint">Doble click sobre un pago para ver el detalle y la observacion.</p>
+      <div class="actions">
+        <div class="field" style="min-width: 220px;">
+          <label>Cliente</label>
+          <select [(ngModel)]="filtros.idCliente">
+            <option [ngValue]="0">Todos</option>
+            @for (cliente of clientesCatalogo; track cliente.idCliente) {
+              <option [ngValue]="cliente.idCliente">{{ clienteLabel(cliente.idCliente) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field" style="min-width: 220px;">
+          <label>Vehiculo</label>
+          <select [(ngModel)]="filtros.idVehiculo">
+            <option [ngValue]="0">Todos</option>
+            @for (vehiculo of vehiculosParaCliente(filtros.idCliente ?? 0); track vehiculo.idVehiculo) {
+              <option [ngValue]="vehiculo.idVehiculo">{{ vehiculoLabel(vehiculo.idVehiculo) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field" style="min-width: 180px;">
+          <label>Patente</label>
+          <input [(ngModel)]="filtros.patente" placeholder="AE123BC" />
+        </div>
+        <div class="field" style="min-width: 180px;">
+          <label>Desde</label>
+          <input type="datetime-local" [(ngModel)]="filtros.desde" />
+        </div>
+        <div class="field" style="min-width: 180px;">
+          <label>Hasta</label>
+          <input type="datetime-local" [(ngModel)]="filtros.hasta" />
+        </div>
+        <button class="btn btn-soft" (click)="aplicarFiltros()">Filtrar</button>
+        <button class="btn btn-soft" (click)="limpiarFiltros()">Limpiar</button>
+      </div>
+      @if (loading) {
+        <p class="hint">Cargando pagos...</p>
+      }
+      <div class="list">
+        @if (!loading && rows.length === 0) {
+          <div class="list-item"><span>No hay pagos registrados.</span></div>
+        }
+        @for (row of rows; track row.idPago) {
+          <div class="list-item list-item-clickable" [class.is-selected]="pagoSeleccionado?.idPago === row.idPago" (dblclick)="abrirDetalle(row)">
+            <div class="list-item-main">
+              <span class="list-item-title">Pago #{{ row.idPago }} · {{ otLabel(row.idOt) }}</span>
+              <span class="list-item-sub">{{ row.metodoPago }} · {{ row.fechaPago || 'sin fecha manual' }}</span>
+            </div>
+            <span class="badge">$ {{ row.monto }}</span>
+          </div>
+          @if (pagoSeleccionado?.idPago === row.idPago) {
+            <article class="panel panel-soft panel-stack">
+              <h3>Detalle del pago</h3>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Orden de trabajo</label>
+                  <input [value]="otLabel(row.idOt)" readonly />
+                </div>
+                <div class="field">
+                  <label>Metodo</label>
+                  <input [value]="row.metodoPago" readonly />
+                </div>
+                <div class="field">
+                  <label>Monto</label>
+                  <input [value]="'$ ' + row.monto" readonly />
+                </div>
+                <div class="field">
+                  <label>Fecha</label>
+                  <input [value]="row.fechaPago || 'sin fecha manual'" readonly />
+                </div>
+                <div class="field field-span-2">
+                  <label>Observaciones</label>
+                  <textarea [value]="row.observaciones || 'Sin observaciones'" readonly></textarea>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-danger" type="button" (click)="eliminar(row)">Borrar pago</button>
+                <button class="btn btn-soft" type="button" (click)="abrirDetalle(row)">Cerrar</button>
+              </div>
+            </article>
+          }
+        }
+      </div>
+    </article>
+  }
+
+  <!-- ── Pagos a empleados ─────────────────────────────────────────────────── -->
+  @if (tabPagos === 'empleados') {
+    @if (showFormEmpleado) {
+      <article class="panel panel-stack">
+        <h3>Registrar pago a empleado</h3>
+        <div class="form-grid">
+          <div class="field field-span-2">
+            <label>Empleado</label>
+            <select [(ngModel)]="pagoEmpleadoForm.idEmpleado">
+              <option [ngValue]="0">Seleccionar empleado</option>
+              @for (emp of empleadosCatalogo; track emp.idEmpleado) {
+                <option [ngValue]="emp.idEmpleado">{{ empleadoLabel(emp.idEmpleado) }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label>Monto</label>
+            <input type="number" step="0.01" [(ngModel)]="pagoEmpleadoForm.monto" />
+          </div>
+          <div class="field">
+            <label>Metodo</label>
+            <select [(ngModel)]="pagoEmpleadoForm.metodoPago">
+              @for (metodo of metodos; track metodo) {
+                <option [value]="metodo">{{ metodo }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label>Fecha pago (opcional)</label>
+            <input type="datetime-local" [(ngModel)]="pagoEmpleadoForm.fechaPago" />
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" [disabled]="savingEmpleado" (click)="guardarPagoEmpleado()">Guardar pago</button>
+          <button class="btn btn-soft" type="button" (click)="toggleFormEmpleado()">Cancelar</button>
+        </div>
+      </article>
+    }
+
+    <article class="panel">
+      <h3>Pagos a empleados</h3>
+      @if (loadingEmpleado) {
+        <p class="hint">Cargando pagos...</p>
+      }
+      <div class="list">
+        @if (!loadingEmpleado && rowsEmpleado.length === 0) {
+          <div class="list-item"><span>No hay pagos a empleados registrados.</span></div>
+        }
+        @for (row of rowsEmpleado; track row.idPagoEmpleado) {
+          <div class="list-item">
+            <div class="list-item-main">
+              <span class="list-item-title">Pago #{{ row.idPagoEmpleado }} · {{ empleadoLabel(row.idEmpleado) }}</span>
+              <span class="list-item-sub">
+                {{ row.metodoPago }}
+                @if (row.periodoDesde || row.periodoHasta) {
+                  · Periodo: {{ row.periodoDesde || '?' }} — {{ row.periodoHasta || '?' }}
+                }
+                @if (row.fechaPago) { · {{ row.fechaPago }} }
+              </span>
+              @if (row.observaciones) {
+                <span class="list-item-sub">{{ row.observaciones }}</span>
+              }
+            </div>
+            <div class="actions">
+              <span class="badge">$ {{ row.monto }}</span>
+              <button class="btn btn-danger btn-xs" type="button" (click)="eliminarPagoEmpleado(row)">Borrar</button>
+            </div>
+          </div>
+        }
+      </div>
+    </article>
+  }
+</section>

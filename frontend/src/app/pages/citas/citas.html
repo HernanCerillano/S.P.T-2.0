@@ -1,0 +1,169 @@
+﻿<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Turnera y citas</h1>
+      <p>Agenda diaria con prevencion de superposiciones.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleForm()">{{ showForm ? 'Cancelar' : 'Nueva cita' }}</button>
+  </header>
+
+  @if (success) {
+    <div class="alert alert-success">{{ success }}</div>
+  }
+  @if (error) {
+    <div class="alert alert-error">{{ error }}</div>
+  }
+
+  @if (showForm) {
+    <article class="panel panel-stack">
+      <h3>Alta de cita</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Cliente</label>
+          <app-cliente-buscador
+            [seleccionado]="clienteSeleccionadoAlta"
+            (seleccionadoChange)="onClienteSeleccionadoAlta($event)" />
+        </div>
+        <div class="field">
+          <label>Vehiculo</label>
+          <select [(ngModel)]="form.idVehiculo" [disabled]="form.idCliente === 0">
+            <option [ngValue]="0">Seleccionar vehiculo</option>
+            @for (vehiculo of vehiculosParaCliente(form.idCliente); track vehiculo.idVehiculo) {
+              <option [ngValue]="vehiculo.idVehiculo">{{ vehiculoLabel(vehiculo.idVehiculo) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Fecha y hora</label>
+          <input type="datetime-local" [(ngModel)]="form.fechaHora" />
+        </div>
+        <div class="field">
+          <label>Tipo cita</label>
+          <select [(ngModel)]="form.tipoCita">
+            @for (tipo of tipos; track tipo) {
+              <option [value]="tipo">{{ tipoCitaLabel(tipo) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field field-span-2">
+          <label>Observaciones</label>
+          <textarea [(ngModel)]="form.observaciones"></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">Guardar cita</button>
+        <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Agenda</h3>
+    <p class="hint">Doble click sobre una cita para ver detalle y modificarla.</p>
+    <div class="actions">
+      <div class="field" style="min-width: 220px;">
+        <label>Cliente</label>
+        <select [(ngModel)]="filtros.idCliente">
+          <option [ngValue]="0">Todos</option>
+          @for (cliente of clientesCatalogo; track cliente.idCliente) {
+            <option [ngValue]="cliente.idCliente">{{ clienteLabel(cliente.idCliente) }}</option>
+          }
+        </select>
+      </div>
+      <div class="field" style="min-width: 220px;">
+        <label>Vehiculo</label>
+        <select [(ngModel)]="filtros.idVehiculo">
+          <option [ngValue]="0">Todos</option>
+          @for (vehiculo of vehiculosParaCliente(filtros.idCliente ?? 0); track vehiculo.idVehiculo) {
+            <option [ngValue]="vehiculo.idVehiculo">{{ vehiculoLabel(vehiculo.idVehiculo) }}</option>
+          }
+        </select>
+      </div>
+      <div class="field" style="min-width: 180px;">
+        <label>Patente</label>
+        <input [(ngModel)]="filtros.patente" placeholder="AE123BC" />
+      </div>
+      <div class="field" style="min-width: 180px;">
+        <label>Desde</label>
+        <input type="datetime-local" [(ngModel)]="filtros.desde" />
+      </div>
+      <div class="field" style="min-width: 180px;">
+        <label>Hasta</label>
+        <input type="datetime-local" [(ngModel)]="filtros.hasta" />
+      </div>
+      <button class="btn btn-soft" (click)="aplicarFiltros()">Filtrar</button>
+      <button class="btn btn-soft" (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+    @if (loading) {
+      <p class="hint">Cargando citas...</p>
+    }
+    <div class="list">
+      @if (!loading && rows.length === 0) {
+        <div class="list-item"><span>No hay citas registradas.</span></div>
+      }
+      @for (row of rows; track row.idCita) {
+        <div class="list-item list-item-clickable" [class.is-selected]="editingId === row.idCita" (dblclick)="editar(row)">
+          <div class="list-item-main">
+            <span class="list-item-title">Cita #{{ row.idCita }} · {{ tipoCitaLabel(row.tipoCita) }}</span>
+            <span class="list-item-sub">{{ clienteLabel(row.idCliente) }} · {{ vehiculoLabel(row.idVehiculo) }} · {{ row.fechaHora }}</span>
+          </div>
+          <div class="actions">
+            <span class="badge">PROGRAMADA</span>
+            <button class="btn btn-soft btn-xs" type="button" (click)="editar(row)">Modificar</button>
+            <button class="btn btn-danger btn-xs" type="button" (click)="eliminar(row)">Borrar</button>
+          </div>
+        </div>
+        @if (editingId === row.idCita) {
+          <ng-container [ngTemplateOutlet]="detalleCitaTemplate"></ng-container>
+        }
+      }
+    </div>
+  </article>
+
+  <ng-template #detalleCitaTemplate>
+    <article class="panel panel-stack">
+      <h3>Detalle y modificacion de cita</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Cliente</label>
+          <select [(ngModel)]="form.idCliente" (ngModelChange)="onClienteChange()">
+            <option [ngValue]="0">Seleccionar cliente</option>
+            @for (cliente of clientesCatalogo; track cliente.idCliente) {
+              <option [ngValue]="cliente.idCliente">{{ clienteLabel(cliente.idCliente) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Vehiculo</label>
+          <select [(ngModel)]="form.idVehiculo">
+            <option [ngValue]="0">Seleccionar vehiculo</option>
+            @for (vehiculo of vehiculosParaCliente(form.idCliente); track vehiculo.idVehiculo) {
+              <option [ngValue]="vehiculo.idVehiculo">{{ vehiculoLabel(vehiculo.idVehiculo) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Fecha y hora</label>
+          <input type="datetime-local" [(ngModel)]="form.fechaHora" />
+        </div>
+        <div class="field">
+          <label>Tipo cita</label>
+          <select [(ngModel)]="form.tipoCita">
+            @for (tipo of tipos; track tipo) {
+              <option [value]="tipo">{{ tipoCitaLabel(tipo) }}</option>
+            }
+          </select>
+        </div>
+        <div class="field field-span-2">
+          <label>Observaciones</label>
+          <textarea [(ngModel)]="form.observaciones"></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">Guardar cambios</button>
+        <button class="btn btn-danger" type="button" [disabled]="saving" (click)="eliminarSeleccionada()">Borrar cita</button>
+        <button class="btn btn-soft" type="button" (click)="cancelarEdicion()">Cerrar</button>
+      </div>
+    </article>
+  </ng-template>
+</section>

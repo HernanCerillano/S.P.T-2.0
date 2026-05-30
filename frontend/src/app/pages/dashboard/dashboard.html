@@ -1,0 +1,53 @@
+<section class="page">
+  <div class="grid grid-3">
+    @for (metric of metrics; track metric.label) {
+      <article class="panel">
+        <h3>{{ metric.label }}</h3>
+        <p class="metric">{{ metric.value }}</p>
+      </article>
+    }
+  </div>
+
+  <!-- ── Calendario semanal ──────────────────────────────────────────────── -->
+  <article class="panel panel-stack">
+    <div class="cal-header">
+      <button class="btn btn-soft btn-xs" (click)="semanaAnterior()">&#8592; Anterior</button>
+      <h3 class="cal-title">{{ labelSemana() }}</h3>
+      <button class="btn btn-soft btn-xs" (click)="semanaSiguiente()">Siguiente &#8594;</button>
+      @if (semanaOffset !== 0) {
+        <button class="btn btn-soft btn-xs" (click)="semanaActual()">Hoy</button>
+      }
+    </div>
+
+    @if (calendarLoading) {
+      <p class="hint">Cargando calendario...</p>
+    }
+
+    <div class="cal-week">
+      @for (dia of diasDeLaSemana(); track dia.toISOString()) {
+        <div class="cal-day" [class.cal-day-hoy]="esHoy(dia)">
+          <span class="cal-day-label">{{ labelDia(dia) }}</span>
+          <div class="cal-day-items">
+            @for (item of itemsDelDia(dia); track item.id) {
+              <div [class]="itemClass(item)" [title]="item.descripcion || item.titulo">
+                <span class="cal-item-time">
+                  @if (!item.todoElDia) {
+                    {{ item.fechaInicio | slice:11:16 }}
+                  } @else {
+                    Todo el dia
+                  }
+                </span>
+                <span class="cal-item-titulo">{{ item.titulo }}</span>
+              </div>
+            }
+            @if (itemsDelDia(dia).length === 0 && !calendarLoading) {
+              <span class="cal-vacio">—</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </article>
+</section>
+
+<app-citas></app-citas>

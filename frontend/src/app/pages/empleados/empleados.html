@@ -1,0 +1,166 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Empleados</h1>
+      <p>ABM de empleados y registro de pagos de sueldos.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleForm()">
+      {{ showForm ? 'Cancelar' : 'Nuevo empleado' }}
+    </button>
+  </header>
+
+  @if (success) { <div class="alert alert-success">{{ success }}</div> }
+  @if (error)   { <div class="alert alert-error">{{ error }}</div> }
+
+  @if (showForm) {
+    <article class="panel panel-stack">
+      <h3>{{ editingId ? 'Modificar empleado' : 'Alta de empleado' }}</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre</label>
+          <input [(ngModel)]="form.nombre" placeholder="Juan" />
+        </div>
+        <div class="field">
+          <label>Apellido</label>
+          <input [(ngModel)]="form.apellido" placeholder="Perez" />
+        </div>
+        <div class="field">
+          <label>DNI</label>
+          <input [(ngModel)]="form.dni" placeholder="12345678" />
+        </div>
+        <div class="field">
+          <label>Telefono</label>
+          <input [(ngModel)]="form.telefono" placeholder="11-xxxx-xxxx" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input [(ngModel)]="form.email" placeholder="empleado@mail.com" />
+        </div>
+        <div class="field">
+          <label>Rol en taller</label>
+          <input [(ngModel)]="form.rolTaller" placeholder="Mecanico, administrativo..." />
+        </div>
+        <div class="field">
+          <label>Sueldo base</label>
+          <input type="number" [(ngModel)]="form.sueldoBase" placeholder="0" />
+        </div>
+        <label class="field-check">
+          <input type="checkbox" [(ngModel)]="form.activo" />
+          <span>Empleado activo</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardar()">
+          {{ editingId ? 'Guardar cambios' : 'Guardar empleado' }}
+        </button>
+        <button class="btn btn-soft" type="button" (click)="toggleForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Listado</h3>
+    <div class="actions">
+      <div class="field" style="min-width: 260px;">
+        <label>Buscar</label>
+        <input [(ngModel)]="filtroTexto" placeholder="Nombre, apellido, DNI, rol..." />
+      </div>
+    </div>
+    @if (loading) { <p class="hint">Cargando empleados...</p> }
+    <div class="list">
+      @if (!loading && rowsFiltradas().length === 0) {
+        <div class="list-item"><span>No hay empleados cargados.</span></div>
+      }
+      @for (row of rowsFiltradas(); track row.idEmpleado) {
+        <div class="list-item list-item-clickable" (dblclick)="editar(row)">
+          <div class="list-item-main">
+            <span class="list-item-title">{{ row.nombre }} {{ row.apellido }}</span>
+            <span class="list-item-sub">
+              {{ row.rolTaller || 'Sin rol' }} · DNI {{ row.dni || '—' }} · Sueldo base {{ row.sueldoBase != null ? (row.sueldoBase | currency:'$':'symbol':'1.2-2') : '—' }}
+            </span>
+          </div>
+          <div class="actions">
+            <span [class]="row.activo ? 'badge badge-success' : 'badge badge-warn'">{{ row.activo ? 'ACTIVO' : 'INACTIVO' }}</span>
+            <button class="btn btn-soft btn-xs" type="button" (click)="abrirPagos(row)">
+              {{ empleadoSeleccionado?.idEmpleado === row.idEmpleado ? 'Cerrar pagos' : 'Pagos' }}
+            </button>
+            <button class="btn btn-soft btn-xs" type="button" (click)="editar(row)">Modificar</button>
+            <button class="btn btn-danger btn-xs" type="button" (click)="eliminar(row)">Borrar</button>
+          </div>
+        </div>
+
+        @if (empleadoSeleccionado?.idEmpleado === row.idEmpleado) {
+          <div class="list-item-detail">
+            <div class="detail-head">
+              <span>Pagos de {{ row.nombre }} {{ row.apellido }}</span>
+              <button class="btn btn-soft btn-xs" type="button" (click)="togglePagoForm()">
+                {{ showPagoForm ? 'Cancelar' : 'Registrar pago' }}
+              </button>
+            </div>
+
+            @if (showPagoForm) {
+              <div class="form-grid form-grid-compact">
+                <div class="field">
+                  <label>Monto</label>
+                  <input type="number" [(ngModel)]="pagoForm.monto" placeholder="0" />
+                </div>
+                <div class="field">
+                  <label>Metodo pago</label>
+                  <select [(ngModel)]="pagoForm.metodoPago">
+                    @for (m of metodosPago; track m) {
+                      <option [value]="m">{{ m }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Periodo desde</label>
+                  <input type="date" [(ngModel)]="pagoForm.periodoDesde" />
+                </div>
+                <div class="field">
+                  <label>Periodo hasta</label>
+                  <input type="date" [(ngModel)]="pagoForm.periodoHasta" />
+                </div>
+                <div class="field">
+                  <label>Fecha pago (opcional)</label>
+                  <input type="datetime-local" [(ngModel)]="pagoForm.fechaPago" />
+                </div>
+                <div class="field field-span-2">
+                  <label>Observaciones</label>
+                  <input [(ngModel)]="pagoForm.observaciones" placeholder="Observaciones..." />
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary btn-xs" [disabled]="pagoSaving" (click)="registrarPago()">Guardar pago</button>
+                <button class="btn btn-soft btn-xs" type="button" (click)="togglePagoForm()">Cancelar</button>
+              </div>
+            }
+
+            @if (pagosLoading) { <p class="hint">Cargando pagos...</p> }
+            <div class="list list-inner">
+              @if (!pagosLoading && pagosRows.length === 0) {
+                <div class="list-item"><span class="hint">Sin pagos registrados.</span></div>
+              }
+              @for (pago of pagosRows; track pago.idPagoEmpleado) {
+                <div class="list-item">
+                  <div class="list-item-main">
+                    <span class="list-item-title">{{ pago.monto | currency:'$':'symbol':'1.2-2' }} · {{ pago.metodoPago }}</span>
+                    <span class="list-item-sub">
+                      Pago #{{ pago.idPagoEmpleado }}
+                      @if (pago.periodoDesde || pago.periodoHasta) {
+                        · Periodo {{ pago.periodoDesde || '?' }} → {{ pago.periodoHasta || '?' }}
+                      }
+                      @if (pago.observaciones) { · {{ pago.observaciones }} }
+                    </span>
+                  </div>
+                  <div class="actions">
+                    <button class="btn btn-danger btn-xs" type="button" (click)="eliminarPago(pago)">Borrar</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </article>
+</section>

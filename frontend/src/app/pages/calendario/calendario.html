@@ -1,0 +1,115 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Calendario</h1>
+      <p>Citas y eventos del taller.</p>
+    </div>
+    <button class="btn btn-primary" (click)="toggleEventoForm()">
+      {{ showEventoForm ? 'Cancelar' : 'Nuevo evento' }}
+    </button>
+  </header>
+
+  @if (success) { <div class="alert alert-success">{{ success }}</div> }
+  @if (error)   { <div class="alert alert-error">{{ error }}</div> }
+
+  <article class="panel">
+    <div class="actions">
+      <div class="field">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="desde" />
+      </div>
+      <div class="field">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="hasta" />
+      </div>
+      <button class="btn btn-soft" type="button" (click)="cargar()">Actualizar</button>
+    </div>
+  </article>
+
+  @if (showEventoForm) {
+    <article class="panel panel-stack">
+      <h3>{{ editandoEvento ? 'Editar evento' : 'Nuevo evento' }}</h3>
+      <div class="form-grid">
+        <div class="field field-span-2">
+          <label>Titulo</label>
+          <input [(ngModel)]="eventoForm.titulo" placeholder="Titulo del evento" />
+        </div>
+        <div class="field">
+          <label>Tipo</label>
+          <select [(ngModel)]="eventoForm.tipo">
+            @for (tipo of tiposEvento; track tipo) {
+              <option [value]="tipo">{{ tipo }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Empleado (opcional)</label>
+          <select [(ngModel)]="eventoForm.idEmpleado">
+            <option [ngValue]="null">Sin empleado</option>
+            @for (emp of empleadosCatalogo; track emp.idEmpleado) {
+              <option [ngValue]="emp.idEmpleado">{{ emp.nombre }} {{ emp.apellido }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>Fecha inicio</label>
+          <input type="datetime-local" [(ngModel)]="eventoForm.fechaInicio" />
+        </div>
+        <div class="field">
+          <label>Fecha fin (opcional)</label>
+          <input type="datetime-local" [(ngModel)]="eventoForm.fechaFin" />
+        </div>
+        <div class="field">
+          <label>Color (hex, opcional)</label>
+          <input [(ngModel)]="eventoForm.color" placeholder="#3b82f6" />
+        </div>
+        <label class="field-check">
+          <input type="checkbox" [(ngModel)]="eventoForm.todoElDia" />
+          <span>Todo el dia</span>
+        </label>
+        <div class="field field-span-2">
+          <label>Descripcion</label>
+          <textarea [(ngModel)]="eventoForm.descripcion" placeholder="Descripcion opcional..."></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" [disabled]="saving" (click)="guardarEvento()">
+          {{ editandoEvento ? 'Guardar cambios' : 'Crear evento' }}
+        </button>
+        <button class="btn btn-soft" type="button" (click)="toggleEventoForm()">Cancelar</button>
+      </div>
+    </article>
+  }
+
+  <article class="panel">
+    <h3>Agenda del periodo</h3>
+    @if (loading) { <p class="hint">Cargando calendario...</p> }
+    <div class="list">
+      @if (!loading && items.length === 0) {
+        <div class="list-item"><span>Sin eventos ni citas en el periodo seleccionado.</span></div>
+      }
+      @for (item of items; track item.id + item.origen) {
+        <div class="list-item" [class.item-cita]="item.origen === 'CITA'" [class.item-evento]="item.origen === 'EVENTO'">
+          <div class="list-item-main">
+            <span class="list-item-title">
+              {{ item.fechaInicio | date:'dd/MM/yyyy HH:mm' }}
+              @if (item.todoElDia) { <em>(todo el dia)</em> }
+              — {{ item.titulo }}
+            </span>
+            <span class="list-item-sub">
+              {{ item.tipo }}
+              @if (item.descripcion) { · {{ item.descripcion }} }
+            </span>
+          </div>
+          <div class="actions">
+            <span [class]="origenBadge(item)">{{ item.origen }}</span>
+            @if (item.origen === 'EVENTO') {
+              <button class="btn btn-soft btn-xs" type="button" (click)="editarEvento(item)">Editar</button>
+              <button class="btn btn-danger btn-xs" type="button" (click)="eliminarEvento(item)">Borrar</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </article>
+</section>

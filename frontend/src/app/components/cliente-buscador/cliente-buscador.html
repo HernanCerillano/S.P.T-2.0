@@ -1,0 +1,37 @@
+<div class="combo-box combo-cliente">
+  <input
+    type="text"
+    [value]="textoMostrado()"
+    (input)="onInput($event)"
+    (focus)="abrir()"
+    (blur)="cerrarConDelay()"
+    placeholder="Buscar o seleccionar cliente…"
+    autocomplete="off" />
+  <button
+    type="button"
+    class="combo-toggle"
+    (mousedown)="$event.preventDefault()"
+    (click)="toggleBoton()"
+    [attr.aria-label]="_seleccionado() ? 'Quitar selección' : 'Mostrar lista'">
+    {{ _seleccionado() ? '×' : '▾' }}
+  </button>
+
+  @if (abierto()) {
+    <div class="combo-dropdown">
+      @if (clientesFiltrados().length === 0) {
+        <div class="combo-empty">Sin coincidencias</div>
+      }
+      @for (c of clientesFiltrados(); track c.idCliente) {
+        <button
+          type="button"
+          class="combo-option"
+          (mousedown)="seleccionar(c)">
+          <strong>{{ c.apellido }} {{ c.nombre }}</strong>
+          @if (c.telefono) {
+            <span class="combo-sub"> · {{ c.telefono }}</span>
+          }
+        </button>
+      }
+    </div>
+  }
+</div>
